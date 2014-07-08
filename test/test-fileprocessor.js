@@ -66,7 +66,7 @@ describe('FileProcessor', function () {
       };
 
       var result = fp.replaceWith(block);
-      assert.equal(result, '  <link rel="stylesheet" href="foo.css"/>');
+      assert.equal(result, '  <link rel="stylesheet" href="foo.css">');
     });
 
     it('should remove css blocks which have no stylesheets linked in them', function () {
@@ -108,6 +108,24 @@ describe('FileProcessor', function () {
       assert.equal(result, '');
     });
 
+    it('should replace cutsom blocks using provided replacement function', function () {
+      var blockReplacements = {
+        less: function (block) {
+          return 'custom replacement for ' + block.dest;
+        }
+      };
+      var fp = new FileProcessor('html', {}, function () {}, blockReplacements);
+      var block = {
+        dest: 'foo.css',
+        type: 'less',
+        src: ['bar.less'],
+        indent: '  '
+      };
+
+      var result = fp.replaceWith(block);
+      assert.equal(result, '  custom replacement for foo.css');
+    });
+
     it('should preserve defer attribute (JS)', function () {
       var fp = new FileProcessor('html', {});
       var block = {
@@ -147,7 +165,7 @@ describe('FileProcessor', function () {
       };
 
       var result = fp.replaceWith(block);
-      assert.equal(result, '  <link rel="stylesheet" href="foo.css" media="(min-width:980px)"/>');
+      assert.equal(result, '  <link rel="stylesheet" href="foo.css" media="(min-width:980px)">');
     });
 
     it('should preserve IE conditionals for js blocks', function () {
@@ -177,7 +195,7 @@ describe('FileProcessor', function () {
       };
 
       var result = fp.replaceWith(block);
-      assert.equal(result, '  <!--[if (lt IE 9) & (!IEmobile)]>\n  <link rel="stylesheet" href="foo.css"/>\n  <![endif]-->');
+      assert.equal(result, '  <!--[if (lt IE 9) & (!IEmobile)]>\n  <link rel="stylesheet" href="foo.css">\n  <![endif]-->');
     });
   });
 
@@ -330,7 +348,7 @@ describe('FileProcessor', function () {
       assert.equal(replaced, '<img src="' + filemapping['app/image.png'] + '" ng-src="{{my.image}}">');
     });
 
-    it('should replace img src after class attribute', function() {
+    it('should replace img src after class attribute', function () {
       var content = '<img class="myclass" src="image.png">';
       var replaced = fp.replaceWithRevved(content, ['app']);
       assert.equal(replaced, '<img class="myclass" src="' + filemapping['app/image.png'] + '">');
@@ -384,7 +402,7 @@ describe('FileProcessor', function () {
       assert.equal(replaced, '<input type="image" src="' + filemapping['app/image.png'] + '" />');
     });
 
-    it('should replace img in meta content', function() {
+    it('should replace img in meta content', function () {
       var content = '<meta name="foo" content="image.png">';
       var replaced = fp.replaceWithRevved(content, ['app']);
       assert.equal(replaced, '<meta name="foo" content="' + filemapping['app/image.png'] + '">');
