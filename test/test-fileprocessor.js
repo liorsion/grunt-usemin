@@ -108,7 +108,7 @@ describe('FileProcessor', function () {
       assert.equal(result, '');
     });
 
-    it('should replace cutsom blocks using provided replacement function', function () {
+    it('should replace custom blocks using provided replacement function', function () {
       var blockReplacements = {
         less: function (block) {
           return 'custom replacement for ' + block.dest;
@@ -231,10 +231,12 @@ describe('FileProcessor', function () {
       'app/bar.css': 'bar.5678.css',
       'app/baz.css': '/baz.8910.css',
       'app/image.png': 'image.1234.png',
+      'app/image@2x.png': 'image@2x.1234.png',
       'app/video.webm': 'video.1234.webm',
       'tmp/bar.css': 'bar.1234.css',
       'app/foo.js': 'foo.1234.js',
-      '/styles/main.css': '/styles/main.1234.css'
+      '/styles/main.css': '/styles/main.1234.css',
+      'app/image.svg': 'image.1234.svg'
     };
 
     var revvedfinder = helpers.makeFinder(filemapping);
@@ -342,6 +344,24 @@ describe('FileProcessor', function () {
       assert.equal(replaced, '<img src="' + filemapping['app/image.png'] + '">');
     });
 
+    it('should replace object data reference with revved version', function () {
+      var content = '<object type="image/svg+xml" data="image.svg">';
+      var replaced = fp.replaceWithRevved(content, ['app']);
+      assert.equal(replaced, '<object type="image/svg+xml" data="' + filemapping['app/image.svg'] + '">');
+    });
+
+    it('should replace image xlink:href reference with revved version', function () {
+      var content = '<image xlink:href="image.svg">';
+      var replaced = fp.replaceWithRevved(content, ['app']);
+      assert.equal(replaced, '<image xlink:href="' + filemapping['app/image.svg'] + '">');
+    });
+
+    it('should replace image src reference with revved version', function () {
+      var content = '<image src="image.png">';
+      var replaced = fp.replaceWithRevved(content, ['app']);
+      assert.equal(replaced, '<image src="' + filemapping['app/image.png'] + '">');
+    });
+
     it('should replace img src regardless of ng-src attribute', function () {
       var content = '<img src="image.png" ng-src="{{my.image}}">';
       var replaced = fp.replaceWithRevved(content, ['app']);
@@ -408,6 +428,39 @@ describe('FileProcessor', function () {
       assert.equal(replaced, '<meta name="foo" content="' + filemapping['app/image.png'] + '">');
     });
 
+    it('should replace img reference in srcset', function () {
+      var content = '<img srcset="image@2x.png 2x" />';
+      var replaced = fp.replaceWithRevved(content, ['app']);
+      assert.equal(replaced, '<img srcset="' + filemapping['app/image@2x.png'] + ' 2x" />');
+
+      content = '<source srcset="image@2x.png 2x" />';
+      replaced = fp.replaceWithRevved(content, ['app']);
+      assert.equal(replaced, '<source srcset="' + filemapping['app/image@2x.png'] + ' 2x" />');
+    });
+
+    it('should replace svg src reference with revved version for img tag', function () {
+      var content = '<img src="image.svg#symbol">';
+      var replaced = fp.replaceWithRevved(content, ['app']);
+      assert.equal(replaced, '<img src="' + filemapping['app/image.svg'] + '#symbol">');
+    });
+
+    it('should replace svg src reference with revved version for image tag', function () {
+      var content = '<image src="image.svg#symbol">';
+      var replaced = fp.replaceWithRevved(content, ['app']);
+      assert.equal(replaced, '<image src="' + filemapping['app/image.svg'] + '#symbol">');
+    });
+
+    it('should replace use xlink:href reference with revved version for svg <use> tag', function () {
+      var content = '<svg><use xlink:href="image.svg#symbol"></svg>';
+      var replaced = fp.replaceWithRevved(content, ['app']);
+      assert.equal(replaced, '<svg><use xlink:href="' + filemapping['app/image.svg'] + '#symbol"></svg>');
+    });
+
+    it('should replace image xlink:href reference with revved version for svg <image> tag', function () {
+      var content = '<svg><image xlink:href="image.svg#symbol"></svg>';
+      var replaced = fp.replaceWithRevved(content, ['app']);
+      assert.equal(replaced, '<svg><image xlink:href="' + filemapping['app/image.svg'] + '#symbol"></svg>');
+    });
   });
 
   describe('css type', function () {
@@ -545,5 +598,86 @@ describe('FileProcessor', function () {
     });
 
 
+  });
+
+  describe('json type', function () {
+    var cp;
+
+    describe('absolute path', function () {
+      var content = '{"images1": "/build/images/test.png","images2": "/images/foo.png","images3": "/images/misc/test.png","images4": "/images/test.png","images5": "/images/foo.png","images6": "/images/pic.png","images7": "/images/misc/test.png"}';
+      var filemapping = {
+        'build/images/test.png': '/images/test.23012.png',
+        'build/images/foo.png': '//images/foo.23012.png',
+        'build/images/misc/test.png': '/images/misc/test.23012.png',
+        'foo/images/test.png': '/images/test.23012.png',
+        'foo/images/foo.png': '//images/foo.23012.png',
+        'foo/images/pic.png': '/images/pic.23012.png',
+        'foo/images/misc/test.png': '/images/misc/test.23012.png'
+      };
+
+      var revvedfinder = helpers.makeFinder(filemapping);
+
+      beforeEach(function () {
+        cp = new FileProcessor('json', revvedfinder);
+      });
+
+      it('should replace with revved files when found', function () {
+        var changed = cp.replaceWithRevved(content, ['build']);
+
+        assert.ok(changed.match(/\/images\/test\.23012\.png/));
+        assert.ok(changed.match(/\/images\/misc\/test\.23012\.png/));
+        assert.ok(changed.match(/\/\/images\/foo\.23012\.png/));
+      });
+
+      it('should take into account alternate search paths', function () {
+        var changed = cp.replaceWithRevved(content, ['foo']);
+
+        assert.ok(changed.match(/\/images\/test\.23012\.png/));
+        assert.ok(changed.match(/\/images\/misc\/test\.23012\.png/));
+        assert.ok(changed.match(/\/\/images\/foo\.23012\.png/));
+
+      });
+
+      it('should take into account src attribute', function () {
+        var changed = cp.replaceWithRevved(content, ['foo']);
+
+        assert.ok(changed.match(/\/images\/pic\.23012\.png/));
+        assert.ok(changed.match(/\/images\/misc\/test\.23012\.png/));
+        assert.ok(changed.match(/\/\/images\/foo\.23012\.png/));
+
+      });
+
+    });
+
+    describe('relative path', function () {
+      var content = '{"image1": "images/test.png""image2": "images/foo.png""image3": "../images/misc/test.png""image4": "images/test.png""image5": "images/foo.png"}';
+      var filemapping = {
+        'build/images/test.png': 'images/test.23012.png',
+        'build/images/foo.png': 'images/foo.23012.png',
+        'images/misc/test.png': '../images/misc/test.23012.png',
+        'foo/images/test.png': 'images/test.23012.png',
+        'foo/images/foo.png': 'images/foo.23012.png'
+      };
+
+      var revvedfinder = helpers.makeFinder(filemapping);
+
+      beforeEach(function () {
+        cp = new FileProcessor('json', revvedfinder);
+      });
+
+      it('should replace with revved files when found', function () {
+        var changed = cp.replaceWithRevved(content, ['build']);
+
+        assert.ok(changed.match(/\"images\/test\.23012\.png/));
+        assert.ok(changed.match(/\"\.\.\/images\/misc\/test\.23012\.png/));
+      });
+
+      it('should take into account alternate search paths', function () {
+        var changed = cp.replaceWithRevved(content, ['foo']);
+
+        assert.ok(changed.match(/\"images\/test\.23012\.png/));
+        assert.ok(changed.match(/\"\.\.\/images\/misc\/test\.23012\.png/));
+      });
+    });
   });
 });
