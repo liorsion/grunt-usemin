@@ -1,4 +1,4 @@
-# grunt-usemin [![Build Status](https://secure.travis-ci.org/yeoman/grunt-usemin.svg?branch=master)](http://travis-ci.org/yeoman/grunt-usemin)
+# grunt-usemin [![Linux Build Status](https://img.shields.io/travis/yeoman/grunt-usemin/master.svg?style=flat&label=Linux%20build)](https://travis-ci.org/yeoman/grunt-usemin) [![Windows Build status](https://img.shields.io/appveyor/ci/addyosmani/grunt-usemin/master.svg?style=flat&label=Windows%20build)](https://ci.appveyor.com/project/addyosmani/grunt-usemin/branch/master)
 
 > Replaces references from non-optimized scripts, stylesheets and other assets to their optimized version within a set of HTML files (or any templates/views).
 
@@ -20,7 +20,7 @@ npm install grunt-usemin --save-dev
 `usemin` replaces the references of scripts, stylesheets and other assets within HTML files dynamically with optimized versions of them. To do this `usemin` exports 2 built-in tasks called `useminPrepare` and `usemin` and utilizes a couple of other Grunt plugins for the optimization process. `usemin` does this by generating the subtasks for these Grunt plugins dynamically.
 
 The built-in tasks of `usemin`:
-* `useminPrepare` prepares the configuration to transform specific blocks in the scrutinized file into a single line, targeting an optimized version of the files. This is done by generating subtasks called `generated` for every optimization steps handled by the Grunt plugins listed below.
+* `useminPrepare` prepares the configuration to transform specific blocks in the scrutinized file into a single line, targeting an optimized version of the files. This is done by generating subtasks called `generated` for each of the optimization steps handled by the Grunt plugins listed below.
 * `usemin` replaces the blocks by the file they reference, and replaces all references to assets by their revisioned version if it is found on the disk. This target modifies the files it is working on.
 
 Grunt plugins which `usemin` can use to optimize files:
