@@ -1,9 +1,19 @@
 # grunt-usemin [![Linux Build Status](https://img.shields.io/travis/yeoman/grunt-usemin/master.svg?style=flat&label=Linux%20build)](https://travis-ci.org/yeoman/grunt-usemin) [![Windows Build status](https://img.shields.io/appveyor/ci/addyosmani/grunt-usemin/master.svg?style=flat&label=Windows%20build)](https://ci.appveyor.com/project/addyosmani/grunt-usemin/branch/master)
+[![Gitter](https://img.shields.io/badge/GITTER-join%20chat-green.svg)](https://gitter.im/yeoman/grunt-usemin)
 
 > Replaces references from non-optimized scripts, stylesheets and other assets to their optimized version within a set of HTML files (or any templates/views).
 
 **[Maintainer wanted](https://github.com/yeoman/grunt-usemin/issues/313)**
 
+## Notice
+
+`grunt-usemin` is going under some major developments to tackle the long list of issues. As they might break with `master` they are merged into [dev branch](https://github.com/yeoman/grunt-usemin/tree/dev).
+
+Currently what has been merged:
+ * support for a `resolveSource` function option
+ * warning for any missing files instead of silent errors
+ * migrate from regexps to HTML parser
+ * (current) support for multiple target
 
 ## Getting Started
 If you haven't used [grunt][] before, be sure to check out the [Getting Started][] guide, as it explains how to create a [gruntfile][Getting Started] as well as install and use grunt plugins. Once you're familiar with that process, install this plugin with this command:
@@ -54,7 +64,7 @@ grunt.registerTask('build', [
 ## The useminPrepare task
 
 `useminPrepare` task updates the grunt configuration to apply a configured transformation flow to tagged files (i.e. blocks).
-By default the transformation flow is composed of `concat` and `uglifyjs` for JS files, but it can be configured.
+By default the transformation flow is composed of `concat` and `uglify` for JS files, but it can be configured.
 
 ### Blocks
 Blocks are expressed as:
@@ -85,7 +95,7 @@ An example of this in completed form can be seen below:
 
 The transformation flow is made of sequential steps: each of the steps transform the file, and useminPrepare will modify the configuration in order for the described steps to be correctly performed.
 
-By default the flow is: `concat -> uglifyjs`.
+By default the flow is: `concat -> uglify`.
 Additionally to the flow, at the end, some postprocessors can be launched to further alter the configuration.
 
 Let's have an example, using the default flow (we're just going to look at the steps), `app` for input dir, `dist` for output dir,  and the following block:
@@ -186,7 +196,7 @@ The root directory from which your files will be resolved.
 ### flow
 
 Type: 'object'  
-Default: `{ steps: { js: ['concat', 'uglifyjs'], css: ['concat', 'cssmin'] }, post: {} }`
+Default: `{ steps: { js: ['concat', 'uglify'], css: ['concat', 'cssmin'] }, post: {} }`
 
 This allow you to configure the workflow, either on a per-target basis, or for all the targets.
 You can change the `steps` or the post-processors (`post`) separately.
@@ -202,7 +212,7 @@ useminPrepare: {
     flow: {
       html: {
         steps: {
-          js: ['uglifyjs']
+          js: ['uglify']
         },
         post: {}
       }
@@ -219,7 +229,7 @@ useminPrepare: {
   options: {
     flow: {
       steps: {
-        js: ['uglifyjs']
+        js: ['uglify']
       },
       post: {}
     }
@@ -235,7 +245,7 @@ useminPrepare: {
   options: {
     flow: {
       steps: {
-        js: ['uglifyjs']
+        js: ['uglify']
       },
       post: {
         js: [{
@@ -262,7 +272,7 @@ User-defined steps and post-processors must have 2 attributes:
 * `name`: name of the `Gruntfile` attribute that holds the corresponding config
 * `createConfig` which is a 2 arguments function ( a `context` and the treated `block`)
 
-For an example of steps/post-processors, you can have a look at `concat` and `uglifyjs` in the `lib/config` directory of this repository.
+For an example of steps/post-processors, you can have a look at `concat` and `uglify` in the `lib/config` directory of this repository.
 
 ##### `createConfig`
 
@@ -358,7 +368,7 @@ By default `usemin` will look under `dist/html` for revved versions of `styles/m
 Type: 'Array'  
 Default: Single item array set to the value of the directory where the currently looked at file is.
 
-List of directories where we should start to look for revved version of the assets referenced in the currently looked at file.
+List of directories where we should start to look for *revved version* of the assets referenced in the currently looked at file.
 
 Example:
 ```js
@@ -369,6 +379,13 @@ usemin: {
   }
 }
 ```
+
+Suppose in `index.html` you have a reference to `/images/foo.png`, `usemin` will search for the revved version of `/images/foo.png`, say `/images/foo.12345678.png` in any directories in `assetsDirs` options.
+
+In others words, given the configuration above, `usemin` will search for the existence of one of these files:
+ * foo/bar/images/foo.12345678.png
+ * bar/images/foo.12345678.png
+
 
 #### patterns
 
@@ -400,7 +417,7 @@ So in short:
   * First one if the regexp to use. The first group is the one that is supposed to represent the file
     reference to replace
   * Second one is a logging string
-  * A function which behaves like a filter-in. Receives the matched group and must return the file 
+  * A function which behaves like a filter-in. Receives the matched group and must return the file
     path of the asset. Great functionality when you have a compiled file by a template engine.
   * A function which behaves like a filter-out. It receives the revved path of the asset and must
     return it as an url from it will be reached from web server.
